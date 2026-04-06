@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f0f0f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="FitFlame">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="manifest" href="manifest.json">
+  <title>FitFlame</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ═══════════ SETUP SCREEN ═══════════ -->
+<div id="setup-screen">
+  <div class="setup-emoji">🔥</div>
+  <h1 class="setup-title">Witaj w FitFlame!</h1>
+  <p class="setup-sub">Twój osobisty trener w kieszeni.<br>Śledź streaki, buduj nawyki, osiągaj cele.</p>
+  <div class="setup-form">
+    <div>
+      <label class="setup-label">Twoje imię</label>
+      <input id="setup-name" class="input" type="text" placeholder="np. Hubert" autocomplete="off">
+    </div>
+    <div>
+      <label class="setup-label">Wzrost (cm)</label>
+      <input id="setup-height" class="input" type="number" inputmode="numeric" placeholder="np. 180" min="100" max="250">
+    </div>
+    <div>
+      <label class="setup-label">Aktualna waga (kg)</label>
+      <input id="setup-weight" class="input" type="number" inputmode="decimal" placeholder="np. 90" min="30" max="300" step="0.5">
+    </div>
+    <div>
+      <label class="setup-label">Cel wagowy (kg)</label>
+      <input id="setup-goal" class="input" type="number" inputmode="decimal" placeholder="np. 80" min="30" max="300" step="0.5">
+    </div>
+    <button id="setup-submit" class="btn btn-primary" style="margin-top:8px">🔥 Zaczynamy!</button>
+  </div>
+</div>
+
+<!-- ═══════════ MAIN APP ═══════════ -->
+<div id="app" style="display:none">
+
+  <!-- ── HOME ── -->
+  <section id="screen-home" class="screen active">
+
+    <div class="home-hero">
+      <div>
+        <div class="home-greeting" id="home-greeting">Cześć!</div>
+        <div class="home-date" id="home-date"></div>
+      </div>
+      <div class="home-avatar" id="home-avatar">H</div>
+    </div>
+
+    <!-- Break banner (hidden by default) -->
+    <div class="break-banner" id="break-banner" style="display:none">
+      <span class="break-banner-icon">⚠️</span>
+      <div class="break-banner-text">Masz przerwę w treningu! Czas wracać do formy 💪</div>
+      <button class="break-banner-close" onclick="document.getElementById('break-banner').style.display='none'">✕</button>
+    </div>
+
+    <!-- XP bar -->
+    <div class="xp-bar-wrap stagger">
+      <div class="xp-bar-header">
+        <span class="xp-level-name" id="xp-level-name">Nowicjusz</span>
+        <span class="xp-value" id="xp-value">0 XP</span>
+      </div>
+      <div class="xp-track"><div class="xp-fill" id="xp-fill" style="width:0%"></div></div>
+    </div>
+
+    <!-- Streaks -->
+    <div class="streak-row">
+      <div class="streak-card" id="streak-gym-card">
+        <div class="streak-icon">🏋️</div>
+        <div class="streak-num" id="streak-gym-num">0</div>
+        <div class="streak-label">Siłownia</div>
+        <div class="streak-sub" id="streak-gym-sub">dni z rzędu</div>
+      </div>
+      <div class="streak-card" id="streak-food-card">
+        <div class="streak-icon">🥗</div>
+        <div class="streak-num" id="streak-food-num">0</div>
+        <div class="streak-label">Bez fast food</div>
+        <div class="streak-sub" id="streak-food-sub">dni z rzędu</div>
+      </div>
+    </div>
+
+    <!-- Weekly goal -->
+    <div class="weekly-goal-card" id="weekly-goal-card" style="display:none">
+      <div class="wg-ring-wrap">
+        <svg class="wg-ring" viewBox="0 0 56 56">
+          <circle class="wg-ring-bg"   cx="28" cy="28" r="24"/>
+          <circle class="wg-ring-fill" id="wg-ring-fill" cx="28" cy="28" r="24"/>
+        </svg>
+        <div class="wg-ring-text" id="wg-ring-text">0/0</div>
+      </div>
+      <div class="wg-info">
+        <div class="wg-title" id="wg-title">Cel tygodniowy</div>
+        <div class="wg-sub"   id="wg-sub">Ustaw w Profilu</div>
+      </div>
+    </div>
+
+    <!-- Check-ins -->
+    <div class="section-title">Dzisiaj</div>
+    <div class="checkin-grid">
+      <button class="checkin-btn ripple-host" id="checkin-gym" onclick="App.checkInGym(event)">
+        <span class="checkin-icon">🏋️</span>
+        <div class="checkin-text">
+          Byłem na siłowni
+          <small>+50 XP • streak siłownia</small>
+        </div>
+        <div class="checkin-right">
+          <span class="checkin-check" id="checkin-gym-check">○</span>
+          <button class="undo-btn" id="undo-gym" style="display:none" onclick="event.stopPropagation();App.undoGym()">cofnij</button>
+        </div>
+      </button>
+      <button class="checkin-btn ripple-host" id="checkin-food" onclick="App.checkInFood(event)">
+        <span class="checkin-icon">🥗</span>
+        <div class="checkin-text">
+          Nie jadłem fast food
+          <small>+20 XP • streak jedzenie</small>
+        </div>
+        <div class="checkin-right">
+          <span class="checkin-check" id="checkin-food-check">○</span>
+          <button class="undo-btn" id="undo-food" style="display:none" onclick="event.stopPropagation();App.undoFood()">cofnij</button>
+        </div>
+      </button>
+    </div>
+
+    <!-- Stats -->
+    <div class="section-title">Statystyki</div>
+    <div class="stats-row">
+      <div class="stat-box">
+        <div class="stat-val" id="stat-workouts">0</div>
+        <div class="stat-lbl">Treningów</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" id="stat-best-streak">0</div>
+        <div class="stat-lbl">Rekord</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" id="stat-weight">—</div>
+        <div class="stat-lbl">Waga kg</div>
+      </div>
+    </div>
+
+    <!-- Quote -->
+    <div class="quote-card" id="quote-card">
+      <span class="quote-icon">💬</span>
+      <span id="quote-text"></span>
+    </div>
+
+    <div style="height:8px"></div>
+  </section>
+
+  <!-- ── WORKOUT ── -->
+  <section id="screen-workout" class="screen">
+    <div class="screen-header">🏋️ Trening</div>
+
+    <div class="seg-control">
+      <button class="seg-btn active" id="seg-new"       onclick="App.workoutTab('new')">Nowy trening</button>
+      <button class="seg-btn"        id="seg-templates" onclick="App.workoutTab('templates')">Szablony</button>
+    </div>
+
+    <div id="workout-new-view">
+      <div id="workout-today-summary" style="display:none">
+        <div class="workout-summary">
+          <div class="summary-emoji">✅</div>
+          <div class="summary-title">Trening zapisany!</div>
+          <div class="summary-stats" id="workout-summary-stats"></div>
+        </div>
+        <div style="padding:0 16px;display:flex;flex-direction:column;gap:8px">
+          <button class="btn btn-secondary" onclick="App.startNewWorkout()">➕ Dodaj kolejny trening</button>
+        </div>
+      </div>
+
+      <div id="workout-builder">
+        <div class="workout-form">
+          <div class="workout-name-row">
+            <input id="workout-name" class="input" type="text" placeholder="Nazwa treningu (np. Push Day)" autocomplete="off">
+          </div>
+          <div id="exercises-list"></div>
+          <div class="workout-note-row">
+            <textarea id="workout-note" placeholder="Notatka (opcjonalnie): jak szło, co czułeś..."></textarea>
+          </div>
+        </div>
+        <div class="workout-actions">
+          <button class="btn btn-secondary btn-sm" onclick="App.addExercise()">➕ Dodaj ćwiczenie</button>
+          <button class="btn btn-primary" id="finish-workout-btn" onclick="App.finishWorkout()">✅ Zakończ trening</button>
+        </div>
+        <div style="height:8px"></div>
+      </div>
+    </div>
+
+    <div id="workout-templates-view" style="display:none">
+      <div class="section-title">Wybierz szablon</div>
+      <div class="template-grid" id="templates-grid"></div>
+      <div style="height:8px"></div>
+    </div>
+  </section>
+
+  <!-- ── WEIGHT ── -->
+  <section id="screen-weight" class="screen">
+    <div class="weight-current">
+      <span class="weight-big" id="weight-current-val">—</span>
+      <span class="weight-unit">kg</span>
+      <div class="weight-date" id="weight-current-date">brak pomiaru</div>
+    </div>
+
+    <div class="weight-entry-card">
+      <label class="setup-label" style="margin-bottom:8px">Dodaj pomiar</label>
+      <div class="weight-input-row">
+        <input id="weight-input" class="input" type="number" inputmode="decimal" placeholder="np. 88.5" min="30" max="300" step="0.1">
+        <button class="btn btn-primary btn-sm" style="width:auto;padding:12px 22px" onclick="App.logWeight()">Zapisz</button>
+      </div>
+    </div>
+
+    <div class="goal-bar-wrap">
+      <div class="goal-bar-header">
+        <span>Cel wagowy</span>
+        <span id="goal-pct" class="badge-pill badge-green">0%</span>
+      </div>
+      <div class="goal-track"><div class="goal-fill" id="goal-fill" style="width:0%"></div></div>
+      <div class="goal-labels">
+        <span id="goal-start-lbl">—</span>
+        <span id="goal-end-lbl">—</span>
+      </div>
+    </div>
+
+    <div class="section-title">Ostatnie 30 dni</div>
+    <div class="chart-wrap"><canvas id="weight-chart"></canvas></div>
+
+    <div class="weight-stats-row">
+      <div class="wstat"><strong id="wstat-start">—</strong><span>Startowa</span></div>
+      <div class="wstat"><strong id="wstat-delta" style="color:var(--blue)">—</strong><span>Zmiana</span></div>
+      <div class="wstat"><strong id="wstat-goal" style="color:var(--green)">—</strong><span>Cel</span></div>
+    </div>
+    <div style="height:8px"></div>
+  </section>
+
+  <!-- ── ACHIEVEMENTS ── -->
+  <section id="screen-achievements" class="screen">
+    <div class="level-hero">
+      <div class="level-ring-wrap">
+        <svg class="level-ring" viewBox="0 0 130 130">
+          <circle class="ring-bg"   cx="65" cy="65" r="58"/>
+          <circle class="ring-fill" id="ring-fill" cx="65" cy="65" r="58"/>
+        </svg>
+        <div class="ring-text">
+          <span class="ring-level" id="ring-level">1</span>
+          <span class="ring-label">POZIOM</span>
+        </div>
+      </div>
+      <div class="level-name" id="level-name-display"></div>
+      <div class="level-xp-sub" id="level-xp-sub"></div>
+    </div>
+
+    <div class="section-title">Odznaki</div>
+    <div class="badge-grid" id="badge-grid"></div>
+
+    <div class="section-title" style="margin-top:8px">Statystyki</div>
+    <div class="achiev-stats" id="achiev-stats"></div>
+    <div style="height:8px"></div>
+  </section>
+
+  <!-- ── HISTORY ── -->
+  <section id="screen-history" class="screen">
+    <div class="screen-header">📋 Historia</div>
+    <div id="history-list"></div>
+    <div class="load-more-wrap" id="load-more-wrap" style="display:none">
+      <button class="btn btn-secondary btn-sm" onclick="App.loadMoreHistory()">Pokaż więcej</button>
+    </div>
+    <div style="height:8px"></div>
+  </section>
+
+  <!-- ── PROFIL ── -->
+  <section id="screen-profile" class="screen">
+
+    <div class="profile-hero">
+      <div class="profile-avatar-big" id="profile-avatar-big">H</div>
+      <div class="profile-name-big"   id="profile-name-big">—</div>
+      <div class="profile-join"       id="profile-join">—</div>
+      <div id="profile-level-badge" class="profile-level-badge" style="margin-top:8px"></div>
+    </div>
+
+    <!-- BMI -->
+    <div class="section-title">BMI</div>
+    <div class="bmi-card" id="bmi-card">
+      <div class="bmi-number" id="bmi-number">—</div>
+      <div class="bmi-info">
+        <div class="bmi-label" id="bmi-label">Uzupełnij wzrost</div>
+        <div class="bmi-desc"  id="bmi-desc">Podaj wzrost w ustawieniach poniżej</div>
+      </div>
+    </div>
+
+    <!-- Edit profile -->
+    <div class="section-title">Edytuj profil</div>
+    <div class="profile-form">
+      <div>
+        <label class="profile-field-label">Imię</label>
+        <input id="p-name" class="input" type="text" placeholder="Twoje imię" autocomplete="off">
+      </div>
+      <div>
+        <label class="profile-field-label">Wzrost (cm)</label>
+        <input id="p-height" class="input" type="number" inputmode="numeric" placeholder="np. 180" min="100" max="250">
+      </div>
+      <div>
+        <label class="profile-field-label">Cel wagowy (kg)</label>
+        <input id="p-goal" class="input" type="number" inputmode="decimal" placeholder="np. 80" min="30" max="300" step="0.5">
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="App.saveProfile()">💾 Zapisz zmiany</button>
+    </div>
+
+    <!-- Weekly goal -->
+    <div class="section-title">Cel tygodniowy</div>
+    <div class="card">
+      <div style="font-size:14px;font-weight:700;margin-bottom:10px;color:var(--text-muted)">Ile razy w tygodniu chcesz trenować?</div>
+      <div class="weekly-goal-selector" id="wg-selector"></div>
+    </div>
+
+    <!-- Activity calendar -->
+    <div class="section-title">Aktywność (ostatnie 8 tygodni)</div>
+    <div class="card" style="padding-bottom:12px">
+      <div class="calendar-grid-wrap">
+        <div class="calendar-grid" id="activity-calendar"></div>
+      </div>
+      <div class="calendar-legend">
+        <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--green)"></div>Trening</div>
+        <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--blue)"></div>Bez fast food</div>
+        <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--xp)"></div>Oba</div>
+      </div>
+    </div>
+
+    <!-- Data actions -->
+    <div class="section-title">Dane</div>
+    <div class="data-actions">
+      <button class="btn btn-secondary btn-sm" onclick="App.exportData()">📤 Eksportuj dane (JSON)</button>
+      <button class="btn btn-danger  btn-sm" onclick="App.resetData()">🗑️ Resetuj wszystkie dane</button>
+    </div>
+    <div style="height:8px"></div>
+  </section>
+
+  <!-- ═══ BOTTOM NAV ═══ -->
+  <nav class="bottom-nav">
+    <button class="nav-tab active" id="tab-home"         onclick="App.navigate('home')">
+      <div class="nav-pill"></div>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+      <span>Główna</span>
+    </button>
+    <button class="nav-tab" id="tab-workout"      onclick="App.navigate('workout')">
+      <div class="nav-pill"></div>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 4v16M18 4v16M6 12h12M3 6h3M18 6h3M3 18h3M18 18h3"/></svg>
+      <span>Trening</span>
+    </button>
+    <button class="nav-tab" id="tab-weight"       onclick="App.navigate('weight')">
+      <div class="nav-pill"></div>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2a5 5 0 015 5v.5a.5.5 0 00.5.5H21a1 1 0 011 1v11a2 2 0 01-2 2H4a2 2 0 01-2-2V9a1 1 0 011-1h3.5a.5.5 0 00.5-.5V7a5 5 0 015-5z"/></svg>
+      <span>Waga</span>
+    </button>
+    <button class="nav-tab" id="tab-achievements" onclick="App.navigate('achievements')">
+      <div class="nav-pill"></div>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>
+      <span>Odznaki</span>
+    </button>
+    <button class="nav-tab" id="tab-profile"      onclick="App.navigate('profile')">
+      <div class="nav-pill"></div>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span>Profil</span>
+    </button>
+  </nav>
+</div>
+
+<!-- ═══ OVERLAYS ═══ -->
+<div id="toast"></div>
+
+<div id="levelup-overlay">
+  <div class="levelup-emoji">🎉</div>
+  <div class="levelup-title" id="levelup-title">Nowy poziom!</div>
+  <div class="levelup-sub"   id="levelup-sub"></div>
+  <button class="btn btn-primary" style="width:auto;padding:14px 48px;background:var(--xp);color:#111;font-size:18px" onclick="App.closeLevelUp()">Świetnie! 🚀</button>
+</div>
+
+<div id="badge-overlay" onclick="App.closeBadge()">
+  <div class="badge-popup" onclick="event.stopPropagation()">
+    <span class="badge-popup-emoji" id="badge-popup-emoji"></span>
+    <div class="badge-popup-title">Odblokowano odznakę!</div>
+    <div class="badge-popup-name" id="badge-popup-name"></div>
+    <div class="badge-popup-desc" id="badge-popup-desc"></div>
+    <button class="btn btn-primary" onclick="App.closeBadge()">Niesamowite! 🏆</button>
+  </div>
+</div>
+
+<div id="mood-overlay">
+  <div class="mood-sheet">
+    <div class="mood-title">Jak się czułeś podczas treningu?</div>
+    <div class="mood-options">
+      <button class="mood-btn" data-mood="bad"  onclick="App.selectMood('bad')">
+        <span class="mood-emoji">😴</span>Słabo
+      </button>
+      <button class="mood-btn" data-mood="good" onclick="App.selectMood('good')">
+        <span class="mood-emoji">💪</span>Dobrze
+      </button>
+      <button class="mood-btn" data-mood="fire" onclick="App.selectMood('fire')">
+        <span class="mood-emoji">🔥</span>Byłem w ogniu!
+      </button>
+    </div>
+    <button class="btn btn-secondary btn-sm" onclick="App.selectMood(null)">Pomiń</button>
+  </div>
+</div>
+
+<div id="ios-hint">
+  <span id="ios-hint-close" onclick="this.parentElement.classList.remove('show')">✕</span>
+  Aby zainstalować: w Safari naciśnij <strong>Udostępnij</strong> → <strong>"Dodaj do ekranu głównego"</strong> 📲
+</div>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  }
+</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
