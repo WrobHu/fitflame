@@ -850,7 +850,7 @@ const App = {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active', 'slide-in'));
     document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
     const el = document.getElementById('screen-' + screen);
-    el.classList.add('active', 'slide-in');
+    el.classList.add('active');
     document.getElementById('tab-' + screen).classList.add('active');
 
     if (screen === 'home')         renderHome();
