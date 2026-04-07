@@ -280,7 +280,7 @@ input, textarea { user-select: text; -webkit-user-select: text; }
    HOME SCREEN
 ═══════════════════════════════════════════ */
 .home-hero {
-  padding: calc(env(safe-area-inset-top) + 16px) var(--sp-md) var(--sp-sm);
+  padding: 16px var(--sp-md) var(--sp-sm);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -483,7 +483,7 @@ input, textarea { user-select: text; -webkit-user-select: text; }
    WORKOUT SCREEN
 ═══════════════════════════════════════════ */
 .screen-header {
-  padding: calc(env(safe-area-inset-top) + 16px) var(--sp-md) var(--sp-sm);
+  padding: 16px var(--sp-md) var(--sp-sm);
   font-size: 24px; font-weight: 900;
 }
 
@@ -623,7 +623,7 @@ input, textarea { user-select: text; -webkit-user-select: text; }
 ═══════════════════════════════════════════ */
 .weight-current {
   text-align: center;
-  padding: calc(env(safe-area-inset-top) + 16px) var(--sp-md) var(--sp-sm);
+  padding: 16px var(--sp-md) var(--sp-sm);
 }
 .weight-big  { font-size: 68px; font-weight: 900; line-height: 1; }
 .weight-unit { font-size: 24px; font-weight: 700; color: var(--text-muted); }
@@ -670,7 +670,7 @@ input, textarea { user-select: text; -webkit-user-select: text; }
 ═══════════════════════════════════════════ */
 .level-hero {
   text-align: center;
-  padding: calc(env(safe-area-inset-top) + 16px) var(--sp-md) var(--sp-md);
+  padding: 16px var(--sp-md) var(--sp-md);
   background: linear-gradient(180deg, rgba(255,217,0,0.06), transparent);
 }
 .level-ring-wrap { position: relative; width: 130px; height: 130px; margin: 0 auto var(--sp-md); }
@@ -748,7 +748,7 @@ input, textarea { user-select: text; -webkit-user-select: text; }
    PROFILE SCREEN
 ═══════════════════════════════════════════ */
 .profile-hero {
-  padding: calc(env(safe-area-inset-top) + 16px) var(--sp-md) var(--sp-md);
+  padding: 16px var(--sp-md) var(--sp-md);
   text-align: center;
   background: linear-gradient(180deg, rgba(255,150,0,0.07), transparent);
 }
@@ -965,3 +965,14 @@ input, textarea { user-select: text; -webkit-user-select: text; }
 .empty-state-emoji { font-size: 52px; display: block; margin-bottom: var(--sp-md); }
 .empty-state-title { font-size: 17px; font-weight: 800; margin-bottom: 6px; color: var(--text); }
 .empty-state-sub   { font-size: 14px; line-height: 1.5; }
+
+/* Safe area top only in standalone (installed PWA) mode */
+@media (display-mode: standalone) {
+  .home-hero,
+  .screen-header,
+  .weight-current,
+  .level-hero,
+  .profile-hero {
+    padding-top: calc(env(safe-area-inset-top) + 16px);
+  }
+}
