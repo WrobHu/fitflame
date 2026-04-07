@@ -904,7 +904,7 @@ function initSetup() {
   const profile = Storage.getProfile();
   if (profile.name) {
     document.getElementById('setup-screen').style.display = 'none';
-    document.getElementById('app').style.display = 'flex';
+    document.getElementById('app').style.display = 'block';
     boot();
   } else {
     document.getElementById('setup-screen').style.display = 'flex';
@@ -1279,7 +1279,7 @@ document.getElementById('setup-submit').addEventListener('click', () => {
   Storage.saveWeightLogs([{ id: uid(), date: today(), kg: weight }]);
 
   document.getElementById('setup-screen').style.display = 'none';
-  document.getElementById('app').style.display = 'flex';
+  document.getElementById('app').style.display = 'block';
   boot();
   Anim.toast('🔥 Witaj, ' + name + '! Rozpalamy FitFlame!');
 });
