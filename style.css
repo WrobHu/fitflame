@@ -55,8 +55,8 @@
    RESET + BASE
 ═══════════════════════════════════════════ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { height: 100%; overflow: hidden; }
-html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+html { height: 100%; font-size: 16px; -webkit-text-size-adjust: 100%; }
+body { height: 100%; overflow: hidden; }
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   background: var(--bg);
@@ -77,17 +77,12 @@ input, textarea { user-select: text; -webkit-user-select: text; }
    APP SHELL
 ═══════════════════════════════════════════ */
 #app {
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  display: flex;
-  flex-direction: column;
+  height: 100%;
 }
 
-/* Each screen fills remaining space and scrolls inside itself */
 .screen {
   display: none;
-  flex: 1;
-  min-height: 0; /* critical: allows flex child to shrink and scroll */
+  height: calc(100% - var(--nav-h) - env(safe-area-inset-bottom));
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
@@ -98,7 +93,8 @@ input, textarea { user-select: text; -webkit-user-select: text; }
    BOTTOM NAVIGATION
 ═══════════════════════════════════════════ */
 .bottom-nav {
-  flex-shrink: 0;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
   height: calc(var(--nav-h) + env(safe-area-inset-bottom));
   padding-bottom: env(safe-area-inset-bottom);
   background: var(--surface);
@@ -964,10 +960,17 @@ input, textarea { user-select: text; -webkit-user-select: text; }
 .empty-state-title { font-size: 17px; font-weight: 800; margin-bottom: 6px; color: var(--text); }
 .empty-state-sub   { font-size: 14px; line-height: 1.5; }
 
-/* Safe area only in standalone (installed PWA) mode */
+/* Safe area top in standalone (installed PWA) mode — notch / Dynamic Island */
 @media (display-mode: standalone) {
-  #app {
-    padding-top: env(safe-area-inset-top);
+  .screen {
+    height: calc(100% - var(--nav-h) - env(safe-area-inset-bottom) - env(safe-area-inset-top));
+  }
+  .home-hero,
+  .screen-header,
+  .weight-current,
+  .level-hero,
+  .profile-hero {
+    padding-top: calc(env(safe-area-inset-top) + 16px);
   }
 }
 
