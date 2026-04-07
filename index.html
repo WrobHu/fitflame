@@ -145,6 +145,15 @@
       </div>
     </div>
 
+    <!-- Water tracker -->
+    <div class="water-card">
+      <div class="water-title">
+        Nawodnienie
+        <span id="water-count-text">0/8</span>
+      </div>
+      <div class="water-glasses" id="water-glasses"></div>
+    </div>
+
     <!-- Quote -->
     <div class="quote-card" id="quote-card">
       <span class="quote-icon">💬</span>
@@ -271,6 +280,11 @@
     <div class="load-more-wrap" id="load-more-wrap" style="display:none">
       <button class="btn btn-secondary btn-sm" onclick="App.loadMoreHistory()">Pokaż więcej</button>
     </div>
+    <!-- Personal Records -->
+    <div class="records-section" id="personal-records" style="display:none">
+      <div class="records-title">🏆 Rekordy osobiste</div>
+      <div class="records-list"></div>
+    </div>
     <div style="height:8px"></div>
   </section>
 
@@ -336,6 +350,7 @@
     <div class="section-title">Dane</div>
     <div class="data-actions">
       <button class="btn btn-secondary btn-sm" onclick="App.exportData()">📤 Eksportuj dane (JSON)</button>
+      <button class="btn btn-secondary btn-sm" onclick="App.importData()">📥 Importuj z pliku</button>
       <button class="btn btn-danger  btn-sm" onclick="App.resetData()">🗑️ Resetuj wszystkie dane</button>
     </div>
     <div style="height:8px"></div>

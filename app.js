@@ -103,10 +103,41 @@ const Storage = {
   saveEatingLogs(a)  { this.set('eating_logs', a); },
   getStreak(t)       { return this.get('streak_' + t, { current: 0, best: 0, lastDate: '' }); },
   saveStreak(t, s)   { this.set('streak_' + t, s); },
-  getDailyState()    { return this.get('daily_state', { date: '', gymCheckedIn: false, foodCheckedIn: false, weightLogged: false }); },
+  getDailyState()    { return this.get('daily_state', { date: '', gymCheckedIn: false, foodCheckedIn: false, weightLogged: false, water: 0 }); },
   saveDailyState(s)  { this.set('daily_state', s); },
   getAchievements()  { return this.get('achievements', {}); },
   saveAchievements(a){ this.set('achievements', a); },
+  getRecords()       { return this.get('records', {}); },
+  saveRecords(r)     { this.set('records', r); },
+};
+
+// ═══════════════════════════════════════════
+// PERSONAL RECORDS
+// ═══════════════════════════════════════════
+const RecordsMgr = {
+  // After saving a workout, check if any exercise sets a new PR
+  // Returns array of exercise names that broke a record
+  checkWorkout(workout) {
+    const records = Storage.getRecords();
+    const broken  = [];
+    for (const ex of workout.exercises) {
+      const name = (ex.name || '').trim();
+      if (!name) continue;
+      for (const set of ex.sets) {
+        const kg   = +set.kg  || 0;
+        const reps = +set.reps || 0;
+        if (!reps) continue;
+        const vol = kg * reps;
+        const r   = records[name] || { maxWeight: 0, maxVolume: 0, date: '' };
+        let newPR = false;
+        if (kg  > r.maxWeight) { r.maxWeight = kg;  newPR = true; }
+        if (vol > r.maxVolume) { r.maxVolume = vol; newPR = true; }
+        if (newPR) { r.date = workout.date; records[name] = r; if (!broken.includes(name)) broken.push(name); }
+      }
+    }
+    if (broken.length) Storage.saveRecords(records);
+    return broken;
+  },
 };
 
 // ═══════════════════════════════════════════
@@ -152,7 +183,7 @@ const StreakMgr = {
       }
     }
     const ds = Storage.getDailyState();
-    if (ds.date !== t) Storage.saveDailyState({ date: t, gymCheckedIn: false, foodCheckedIn: false, weightLogged: false });
+    if (ds.date !== t) Storage.saveDailyState({ date: t, gymCheckedIn: false, foodCheckedIn: false, weightLogged: false, water: 0 });
     p.lastOpenDate = t;
     Storage.saveProfile(p);
   },
@@ -432,6 +463,22 @@ function renderHome() {
   const lastW = wLogs.length ? wLogs[wLogs.length - 1].kg : null;
   document.getElementById('stat-weight').textContent = lastW ? lastW + '' : '—';
 
+  // Water tracker
+  const ds = Storage.getDailyState();
+  const waterCount = ds.water || 0;
+  const waterEl = document.getElementById('water-glasses');
+  if (waterEl) {
+    waterEl.innerHTML = '';
+    for (let i = 0; i < 8; i++) {
+      const g = document.createElement('div');
+      g.className = 'water-glass' + (i < waterCount ? ' filled' : '');
+      g.textContent = '💧';
+      g.onclick = () => App.toggleWater(i);
+      waterEl.appendChild(g);
+    }
+    document.getElementById('water-count-text').textContent = waterCount + '/8';
+  }
+
   // Quote
   const dayOfYear = Math.floor((Date.now() - new Date(d.getFullYear(),0,0)) / 86400000);
   document.getElementById('quote-text').textContent = QUOTES[dayOfYear % QUOTES.length];
@@ -622,6 +669,29 @@ function renderHistory(reset = true) {
 
   historyOffset += slice.length;
   document.getElementById('load-more-wrap').style.display = historyOffset < dates.length ? 'block' : 'none';
+
+  // Personal records section (always render)
+  renderPersonalRecords();
+}
+
+function renderPersonalRecords() {
+  const el = document.getElementById('personal-records');
+  if (!el) return;
+  const records = Storage.getRecords();
+  const keys = Object.keys(records);
+  if (!keys.length) { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  const list = el.querySelector('.records-list');
+  list.innerHTML = keys.map(name => {
+    const r = records[name];
+    return `<div class="record-item">
+      <div class="record-exercise">${name}</div>
+      <div class="record-stats">
+        <div class="record-best">${r.maxWeight} kg × ${Math.round(r.maxVolume/r.maxWeight)} reps</div>
+        <div class="record-date">${r.date || ''}</div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 function renderProfile() {
@@ -847,10 +917,18 @@ function initSetup() {
 // ═══════════════════════════════════════════
 const App = {
   navigate(screen) {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active', 'slide-in'));
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
     const el = document.getElementById('screen-' + screen);
+    // Fade in: set opacity 0 before display:block, then transition to 1
+    el.style.opacity = '0';
+    el.style.transition = 'none';
     el.classList.add('active');
+    // rAF ensures display:block is committed before starting the transition
+    requestAnimationFrame(() => {
+      el.style.transition = 'opacity 0.15s ease';
+      el.style.opacity = '1';
+    });
     document.getElementById('tab-' + screen).classList.add('active');
 
     if (screen === 'home')         renderHome();
@@ -871,8 +949,8 @@ const App = {
     const s = Storage.getStreak('gym');
     if (s.current === 7)  setTimeout(() => ProfileMgr.addXP(100), 600);
     if (s.current === 30) setTimeout(() => ProfileMgr.addXP(200), 600);
-    document.getElementById('streak-gym-card').classList.add('bounce');
-    setTimeout(() => document.getElementById('streak-gym-card').classList.remove('bounce'), 500);
+    document.getElementById('streak-gym-card').classList.add('streak-checked');
+    setTimeout(() => document.getElementById('streak-gym-card').classList.remove('streak-checked'), 700);
     renderHome();
     AchievMgr.check();
     Anim.toast('🏋️ Streak siłownia: ' + s.current + ' ' + (s.current === 1 ? 'dzień' : 'dni') + '!');
@@ -899,8 +977,8 @@ const App = {
     const s = Storage.getStreak('food');
     if (s.current === 7)  setTimeout(() => ProfileMgr.addXP(100), 600);
     if (s.current === 30) setTimeout(() => ProfileMgr.addXP(200), 600);
-    document.getElementById('streak-food-card').classList.add('bounce');
-    setTimeout(() => document.getElementById('streak-food-card').classList.remove('bounce'), 500);
+    document.getElementById('streak-food-card').classList.add('streak-checked');
+    setTimeout(() => document.getElementById('streak-food-card').classList.remove('streak-checked'), 700);
     renderHome();
     AchievMgr.check();
     Anim.toast('🥗 Streak jedzenie: ' + s.current + ' ' + (s.current === 1 ? 'dzień' : 'dni') + '!');
@@ -1000,6 +1078,12 @@ const App = {
     ProfileMgr.addXP(50);
     if (!StreakMgr.isTodayCheckedIn('gym')) { setTimeout(() => App.checkInGym(null), 300); }
 
+    // Check personal records
+    const newPRs = RecordsMgr.checkWorkout(saved);
+    if (newPRs.length) {
+      setTimeout(() => Anim.toast('🏆 Nowy rekord: ' + newPRs.slice(0,2).join(', ') + (newPRs.length > 2 ? ' +' + (newPRs.length-2) : '') + '!'), 800);
+    }
+
     // Weekly goal check
     const p = Storage.getProfile();
     if (p.weeklyGoal > 0) {
@@ -1044,6 +1128,53 @@ const App = {
     Anim.toast('✅ Profil zapisany!');
   },
 
+  toggleWater(idx) {
+    const ds = Storage.getDailyState();
+    const current = ds.water || 0;
+    // If clicking the last filled glass (toggle off), or filling the next one
+    const newCount = idx < current ? idx : idx + 1;
+    const gained = Math.max(0, newCount - current);
+    ds.water = newCount;
+    Storage.saveDailyState(ds);
+    if (gained > 0) {
+      ProfileMgr.addXP(gained * 5);
+      if (newCount === 8) Anim.toast('💧 Dzisiaj wypiłeś 8 szklanek! +' + (gained * 5) + ' XP');
+    }
+    renderHome();
+  },
+
+  importData() {
+    const input = document.createElement('input');
+    input.type   = 'file';
+    input.accept = '.json';
+    input.onchange = (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const data = JSON.parse(ev.target.result);
+          if (!data.profile) { Anim.toast('⚠️ Nieprawidłowy plik backupu'); return; }
+          if (!confirm('Importować dane? Zastąpi obecne dane z aplikacji.')) return;
+          if (data.profile)      Storage.saveProfile(data.profile);
+          if (data.workouts)     Storage.saveWorkouts(data.workouts);
+          if (data.weight_logs)  Storage.saveWeightLogs(data.weight_logs);
+          if (data.eating_logs)  Storage.saveEatingLogs(data.eating_logs);
+          if (data.achievements) Storage.saveAchievements(data.achievements);
+          if (data.streaks?.gym)  Storage.saveStreak('gym', data.streaks.gym);
+          if (data.streaks?.food) Storage.saveStreak('food', data.streaks.food);
+          if (data.records)      Storage.saveRecords(data.records);
+          Anim.toast('✅ Dane zaimportowane!');
+          setTimeout(() => location.reload(), 1200);
+        } catch {
+          Anim.toast('⚠️ Błąd odczytu pliku');
+        }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  },
+
   exportData() {
     const data = {
       profile:      Storage.getProfile(),
@@ -1055,6 +1186,7 @@ const App = {
         food: Storage.getStreak('food'),
       },
       achievements: Storage.getAchievements(),
+      records:      Storage.getRecords(),
       exported_at:  new Date().toISOString(),
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -1069,7 +1201,7 @@ const App = {
 
   resetData() {
     if (!confirm('Usunąć wszystkie dane? Tej operacji nie można cofnąć.')) return;
-    ['profile','workouts','weight_logs','eating_logs','streak_gym','streak_food','daily_state','achievements']
+    ['profile','workouts','weight_logs','eating_logs','streak_gym','streak_food','daily_state','achievements','records']
       .forEach(k => localStorage.removeItem('ft_' + k));
     localStorage.removeItem('ft_ios_hint_shown');
     location.reload();
